@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Include the emoji-picker-element from a CDN -->
+  <!-- Load emoji-picker-element from CDN -->
   <script type="module" src="https://unpkg.com/emoji-picker-element@^1/index.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cool Habit Tracker</title>
@@ -22,7 +22,7 @@
       padding: 20px;
       background: #1e1e1e;
       border-radius: 10px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
     }
     h1 {
       text-align: center;
@@ -94,13 +94,19 @@
       background: #2a2a2a;
       border-radius: 10px;
       padding: 15px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
       position: relative;
       cursor: grab;
       transition: transform 0.2s;
     }
     .habit-card:active { cursor: grabbing; }
     .habit-card.dragging { opacity: 0.5; }
+    /* Drop Indicator */
+    .drop-indicator {
+      height: 2px;
+      background: #00c6ff;
+      margin: 4px 0;
+    }
     /* Habit Header with Icon, Title & Delete Icon */
     .habit-header {
       display: flex;
@@ -228,6 +234,8 @@
     .modal-body.active {
       display: block;
     }
+    /* Remove global modal footer save button.
+       We'll update immediately per mode. Keep a cancel button only. */
     .modal-footer {
       text-align: right;
       margin-top: 10px;
@@ -238,15 +246,27 @@
       border-radius: 5px;
       cursor: pointer;
       margin-left: 5px;
-    }
-    .modal-footer .save-btn {
-      background: #28a745;
-      color: #fff;
-    }
-    .modal-footer .cancel-btn {
       background: #ff4d4d;
       color: #fff;
     }
+    /* In the Upload tab, add a small button next to the link input */
+    .upload-link-container {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+    }
+    .upload-link-container input[type="url"] {
+      flex: 1;
+    }
+    .upload-link-btn {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 5px;
+      background: #28a745;
+      color: #fff;
+      cursor: pointer;
+    }
+    /* Modal input styles */
     .modal input[type="text"],
     .modal input[type="url"] {
       width: 100%;
@@ -260,7 +280,7 @@
     .modal input[type="file"] {
       margin-bottom: 10px;
     }
-    /* Emoji Picker Styles */
+    /* Use the emoji-picker-element (it brings its own styles but we can override if needed) */
     emoji-picker {
       width: 100%;
       --emoji-picker-background-color: #2a2a2a;
@@ -280,6 +300,12 @@
     #confirmModal .modal-body {
       text-align: center;
       margin-bottom: 10px;
+    }
+    /* Drop Indicator */
+    .drop-indicator {
+      height: 2px;
+      background: #00c6ff;
+      margin: 4px 0;
     }
   </style>
 </head>
@@ -316,18 +342,18 @@
         <button id="uploadTab">Upload/Link</button>
       </div>
       <div id="emojiBody" class="modal-body active">
-        <!-- Hidden input to store selected emoji -->
-        <input type="hidden" id="modalEmojiInput" />
-        <!-- Instead of a custom panel, we use the emoji-picker-element -->
+        <!-- Using the emoji-picker-element for a full emoji panel -->
         <emoji-picker id="emojiPicker"></emoji-picker>
       </div>
       <div id="uploadBody" class="modal-body">
         <input type="file" id="modalFileInput" accept="image/*" />
-        <input type="url" id="modalLinkInput" placeholder="Or enter image URL" />
+        <div class="upload-link-container">
+          <input type="url" id="modalLinkInput" placeholder="Or enter image URL" />
+          <button id="linkUploadBtn" class="upload-link-btn">Upload</button>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="cancel-btn" id="modalCancelBtn">Cancel</button>
-        <button class="save-btn" id="modalSaveBtn">Save</button>
       </div>
     </div>
   </div>
@@ -625,6 +651,10 @@
     /*************************************
      * 6. Drag & Drop Reordering          *
      *************************************/
+    // Remove any existing drop-indicators
+    function removeDropIndicators() {
+      document.querySelectorAll(".drop-indicator").forEach(el => el.remove());
+    }
     function dragStart(e) {
       draggedCard = this;
       this.classList.add("dragging");
@@ -632,11 +662,16 @@
     }
     function dragOver(e) {
       e.preventDefault();
+      removeDropIndicators();
+      const dropIndicator = document.createElement("div");
+      dropIndicator.className = "drop-indicator";
+      this.parentNode.insertBefore(dropIndicator, this);
       this.classList.add("drag-over");
       return false;
     }
     function dragDrop(e) {
       e.stopPropagation();
+      removeDropIndicators();
       if (draggedCard !== this) {
         const cards = Array.from(document.querySelectorAll(".habit-card"));
         const fromIndex = cards.indexOf(draggedCard);
@@ -651,6 +686,7 @@
     }
     function dragEnd() {
       this.classList.remove("dragging");
+      removeDropIndicators();
       document.querySelectorAll(".habit-card").forEach(card => card.classList.remove("drag-over"));
     }
 
@@ -683,36 +719,26 @@
         setActiveModalTab("upload");
         const modalLink = document.getElementById("modalLinkInput");
         if (modalLink) modalLink.value = currentIcon;
-        const modalEmoji = document.getElementById("modalEmojiInput");
-        if (modalEmoji) modalEmoji.value = "";
       } else if (currentIcon) {
         setActiveModalTab("emoji");
-        const modalEmoji = document.getElementById("modalEmojiInput");
-        if (modalEmoji) modalEmoji.value = currentIcon;
-        const modalLink = document.getElementById("modalLinkInput");
-        if (modalLink) modalLink.value = "";
       } else {
         setActiveModalTab("emoji");
-        const modalEmoji = document.getElementById("modalEmojiInput");
-        if (modalEmoji) modalEmoji.value = "";
-        const modalLink = document.getElementById("modalLinkInput");
-        if (modalLink) modalLink.value = "";
       }
       const modalFile = document.getElementById("modalFileInput");
       if (modalFile) modalFile.value = "";
       const modalHeader = document.getElementById("modalHeader");
       if (modalHeader) modalHeader.textContent = "Set Icon for " + habit;
       document.getElementById("iconModal").style.display = "flex";
-      // Initialize emoji-picker event listener
+      // Attach event listener to emoji-picker once (if not already)
       const emojiPicker = document.getElementById("emojiPicker");
       if (emojiPicker) {
         emojiPicker.addEventListener("emoji-click", event => {
-          // Use event.detail.unicode for the selected emoji.
+          // Immediately update icon when an emoji is clicked.
           const selectedEmoji = event.detail.unicode || event.detail.emoji;
-          const modalEmoji = document.getElementById("modalEmojiInput");
-          if (modalEmoji) {
-            modalEmoji.value = selectedEmoji;
-          }
+          habitData[currentHabitForIcon].icon = selectedEmoji;
+          saveData();
+          renderCards();
+          document.getElementById("iconModal").style.display = "none";
         });
       }
     }
@@ -742,34 +768,28 @@
     document.getElementById("modalCancelBtn").addEventListener("click", function() {
       document.getElementById("iconModal").style.display = "none";
     });
-    document.getElementById("modalSaveBtn").addEventListener("click", function() {
-      const activeTab = document.querySelector(".modal-tabs button.active").id;
-      if (activeTab === "emojiTab") {
-        const modalEmoji = document.getElementById("modalEmojiInput");
-        const emoji = modalEmoji ? modalEmoji.value.trim() : "";
-        habitData[currentHabitForIcon].icon = emoji;
-        saveData();
-        renderCards();
-        document.getElementById("iconModal").style.display = "none";
-      } else {
-        const fileInput = document.getElementById("modalFileInput");
-        if (fileInput.files && fileInput.files[0]) {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            habitData[currentHabitForIcon].icon = e.target.result;
-            saveData();
-            renderCards();
-            document.getElementById("iconModal").style.display = "none";
-          };
-          reader.readAsDataURL(fileInput.files[0]);
-        } else {
-          const modalLink = document.getElementById("modalLinkInput");
-          const link = modalLink ? modalLink.value.trim() : "";
-          habitData[currentHabitForIcon].icon = link;
+    // For file input: update immediately on change.
+    document.getElementById("modalFileInput").addEventListener("change", function() {
+      if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          habitData[currentHabitForIcon].icon = e.target.result;
           saveData();
           renderCards();
           document.getElementById("iconModal").style.display = "none";
-        }
+        };
+        reader.readAsDataURL(this.files[0]);
+      }
+    });
+    // For link input: use the "Upload" button.
+    document.getElementById("linkUploadBtn").addEventListener("click", function() {
+      const modalLink = document.getElementById("modalLinkInput");
+      const link = modalLink ? modalLink.value.trim() : "";
+      if (link) {
+        habitData[currentHabitForIcon].icon = link;
+        saveData();
+        renderCards();
+        document.getElementById("iconModal").style.display = "none";
       }
     });
 
@@ -808,6 +828,10 @@
     /*************************************
      * 11. Drag & Drop Reordering         *
      *************************************/
+    // Remove any existing drop-indicators
+    function removeDropIndicators() {
+      document.querySelectorAll(".drop-indicator").forEach(el => el.remove());
+    }
     function dragStart(e) {
       draggedCard = this;
       this.classList.add("dragging");
@@ -815,11 +839,16 @@
     }
     function dragOver(e) {
       e.preventDefault();
+      removeDropIndicators();
+      const dropIndicator = document.createElement("div");
+      dropIndicator.className = "drop-indicator";
+      this.parentNode.insertBefore(dropIndicator, this);
       this.classList.add("drag-over");
       return false;
     }
     function dragDrop(e) {
       e.stopPropagation();
+      removeDropIndicators();
       if (draggedCard !== this) {
         const cards = Array.from(document.querySelectorAll(".habit-card"));
         const fromIndex = cards.indexOf(draggedCard);
@@ -834,6 +863,7 @@
     }
     function dragEnd() {
       this.classList.remove("dragging");
+      removeDropIndicators();
       document.querySelectorAll(".habit-card").forEach(card => card.classList.remove("drag-over"));
     }
 
