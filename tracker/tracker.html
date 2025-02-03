@@ -27,7 +27,7 @@
     h1 {
       text-align: center;
       margin-bottom: 10px;
-      font-size: 2rem;
+      font-size: 1rem;
       color: #fff;
     }
     .quote {
@@ -35,23 +35,34 @@
       font-style: italic;
       margin-bottom: 20px;
       color: #aaa;
+      font-size: 12px;
     }
     /* Controls */
+    
+    .controlsandhabits{
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 20px;
+
+    }
+    
     .controls {
       display: flex;
       justify-content: center;
-      margin-bottom: 20px;
     }
     .view-toggle button {
       margin: 0 5px;
-      padding: 8px 16px;
+      padding: 10px 10px;
       border: none;
       border-radius: 5px;
       background: #007bff;
       color: #fff;
       cursor: pointer;
       transition: background 0.2s;
+      font-size: 10px;
     }
+
     .view-toggle button:hover {
       background: #0056b3;
     }
@@ -59,10 +70,11 @@
     .add-habit {
       display: flex;
       justify-content: center;
-      margin-bottom: 20px;
+      margin-left: 10px;
+
     }
     .add-habit input {
-      padding: 10px;
+      padding: 0px 10px;
       width: 250px;
       border: 1px solid #444;
       border-radius: 5px;
@@ -71,15 +83,15 @@
       font-size: 16px;
     }
     .add-habit button {
-      padding: 10px 20px;
-      margin-left: 10px;
+      margin: 0 5px;
+      padding: 10px 10px;
       border: none;
       border-radius: 5px;
-      background: #28a745;
+      background: #1e7e34;
       color: #fff;
-      font-size: 16px;
       cursor: pointer;
       transition: background 0.2s;
+      font-size: 10px;
     }
     .add-habit button:hover {
       background: #1e7e34;
@@ -347,6 +359,8 @@
     <h1>Cool Habit Tracker</h1>
     <div class="quote" id="quote"></div>
     <!-- Controls: Only view toggle remains -->
+     <div class="controlsandhabits">
+
     <div class="controls">
       <div class="view-toggle">
         <button id="weeklyViewBtn">Weekly View</button>
@@ -358,6 +372,8 @@
       <input type="text" id="newHabitInput" placeholder="New Habit" />
       <button onclick="addHabit()">Add Habit</button>
     </div>
+  </div>
+
     <!-- Habit Cards -->
     <div class="cards-container" id="cardsContainer">
       <!-- Habit cards will be rendered here -->
