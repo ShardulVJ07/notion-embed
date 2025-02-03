@@ -181,17 +181,22 @@
     }
     /* Graph Canvas */
     #graphCanvas {
-  position: fixed; /* Keeps it fixed at the bottom */
-  bottom: 0; /* Aligns it at the bottom */
-  left: 50%; /* Centers it horizontally */
-  transform: translateX(-50%); /* Centers it properly */
-  width: 100%; /* Makes it span the full width */
-  max-width: 600px; /* You can adjust this based on preference */
-  background: rgb(30, 30, 30); /* Slight transparency */
-  border-top: 1px solid #444; /* Adds a subtle border */
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3); /* Floating effect */
-  z-index: 1000; /* Ensures it stays above other elements */
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 600px;
+  background: rgba(30, 30, 30, 0.9);
+  border-top: 1px solid #444;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
 }
+
+.container {
+  padding-bottom: 170px; /* Add space equal to the canvas height */
+}
+
 
     /* Modal Styles (for Icon Setting and Delete Confirmation) */
     .modal {
