@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Include the emoji-picker-element from a CDN -->
+  <script type="module" src="https://unpkg.com/emoji-picker-element@^1/index.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cool Habit Tracker</title>
+  <style>
+    /* Global Reset & Dark Mode Styles */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #121212;
+      font-family: 'Arial', sans-serif;
+      color: #e0e0e0;
+      line-height: 1.4;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px; /* compact container for Notion embed */
+      margin: 30px auto;
+      padding: 20px;
+      background: #1e1e1e;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2rem;
+      color: #fff;
+    }
+    .quote {
+      text-align: center;
+      font-style: italic;
+      margin-bottom: 20px;
+      color: #aaa;
+    }
+    /* Controls */
+    .controls {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .view-toggle button {
+      margin: 0 5px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      background: #007bff;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .view-toggle button:hover {
+      background: #0056b3;
+    }
+    /* Add Habit */
+    .add-habit {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .add-habit input {
+      padding: 10px;
+      width: 250px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      background: #2a2a2a;
+      color: #fff;
+      font-size: 16px;
+    }
+    .add-habit button {
+      padding: 10px 20px;
+      margin-left: 10px;
+      border: none;
+      border-radius: 5px;
+      background: #28a745;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .add-habit button:hover {
+      background: #1e7e34;
+    }
+    /* Cards Container & Habit Cards */
+    .cards-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .habit-card {
+      background: #2a2a2a;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      position: relative;
+      cursor: grab;
+      transition: transform 0.2s;
+    }
+    .habit-card:active { cursor: grabbing; }
+    .habit-card.dragging { opacity: 0.5; }
+    /* Habit Header with Icon, Title & Delete Icon */
+    .habit-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .habit-header-left {
+      display: flex;
+      align-items: center;
+    }
+    .habit-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 10px;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .habit-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+    .habit-icon span {
+      font-size: 1rem;
+      color: #fff;
+    }
+    .habit-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      cursor: default;
+    }
+    .habit-delete {
+      font-size: 1.2rem;
+      color: #ff4d4d;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 3px;
+      transition: background 0.2s;
+    }
+    .habit-delete:hover {
+      background: #ff4d4d33;
+    }
+    /* Date Blocks */
+    .date-blocks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .date-block {
+      flex: 1 0 60px;
+      max-width: 60px;
+      padding: 5px;
+      text-align: center;
+      border: 1px solid #444;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.3s, color 0.3s;
+    }
+    .date-block.done {
+      background: #28a745;
+      color: #fff;
+      font-weight: bold;
+    }
+    /* Graph Canvas */
+    #graphCanvas {
+      display: block;
+      margin: 30px auto 0 auto;
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 5px;
+    }
+    /* Modal Styles (for Icon Setting and Delete Confirmation) */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .modal-content {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+    }
+    .modal-header {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .modal-tabs {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .modal-tabs button {
+      margin: 0 5px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      background: #444;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .modal-tabs button.active {
+      background: #007bff;
+    }
+    .modal-body {
+      display: none;
+    }
+    .modal-body.active {
+      display: block;
+    }
+    .modal-footer {
+      text-align: right;
+      margin-top: 10px;
+    }
+    .modal-footer button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-left: 5px;
+    }
+    .modal-footer .save-btn {
+      background: #28a745;
+      color: #fff;
+    }
+    .modal-footer .cancel-btn {
+      background: #ff4d4d;
+      color: #fff;
+    }
+    .modal input[type="text"],
+    .modal input[type="url"] {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #444;
+      border-radius: 5px;
+      background: #1e1e1e;
+      color: #fff;
+    }
+    .modal input[type="file"] {
+      margin-bottom: 10px;
+    }
+    /* Emoji Picker Styles */
+    emoji-picker {
+      width: 100%;
+      --emoji-picker-background-color: #2a2a2a;
+      --emoji-picker-border-color: #444;
+      --emoji-picker-search-background-color: #1e1e1e;
+      --emoji-picker-search-text-color: #fff;
+      --emoji-picker-emoji-size: 1.5rem;
+    }
+    /* Confirmation Modal (Simpler) */
+    #confirmModal .modal-content {
+      max-width: 300px;
+    }
+    #confirmModal .modal-header {
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+    #confirmModal .modal-body {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Cool Habit Tracker</h1>
+    <div class="quote" id="quote"></div>
+    <!-- Controls: Only view toggle remains -->
+    <div class="controls">
+      <div class="view-toggle">
+        <button id="weeklyViewBtn">Weekly View</button>
+        <button id="monthlyViewBtn">Monthly View</button>
+      </div>
+    </div>
+    <!-- Add Habit -->
+    <div class="add-habit">
+      <input type="text" id="newHabitInput" placeholder="New Habit" />
+      <button onclick="addHabit()">Add Habit</button>
+    </div>
+    <!-- Habit Cards -->
+    <div class="cards-container" id="cardsContainer">
+      <!-- Habit cards will be rendered here -->
+    </div>
+    <!-- Global Graph Canvas -->
+    <canvas id="graphCanvas"></canvas>
+  </div>
+
+  <!-- Modal for Setting Icon -->
+  <div id="iconModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header" id="modalHeader">Set Icon</div>
+      <div class="modal-tabs">
+        <button id="emojiTab" class="active">Emoji</button>
+        <button id="uploadTab">Upload/Link</button>
+      </div>
+      <div id="emojiBody" class="modal-body active">
+        <!-- Hidden input to store selected emoji -->
+        <input type="hidden" id="modalEmojiInput" />
+        <!-- Instead of a custom panel, we use the emoji-picker-element -->
+        <emoji-picker id="emojiPicker"></emoji-picker>
+      </div>
+      <div id="uploadBody" class="modal-body">
+        <input type="file" id="modalFileInput" accept="image/*" />
+        <input type="url" id="modalLinkInput" placeholder="Or enter image URL" />
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" id="modalCancelBtn">Cancel</button>
+        <button class="save-btn" id="modalSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for Delete Confirmation -->
+  <div id="confirmModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header" id="confirmModalHeader">Delete Habit</div>
+      <div class="modal-body" id="confirmModalBody">Are you sure you want to delete this habit?</div>
+      <div class="modal-footer">
+        <button class="cancel-btn" id="confirmCancelBtn">Cancel</button>
+        <button class="save-btn" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*************************************
+     * 1. Setup: Quotes & Default Habits *
+     *************************************/
+    const quotes = [
+      "Believe you can and you're halfway there.",
+      "The only way to do great work is to love what you do.",
+      "Don't watch the clock; do what it does. Keep going.",
+      "The secret of getting ahead is getting started.",
+      "It always seems impossible until it's done."
+    ];
+    document.getElementById("quote").textContent =
+      quotes[Math.floor(Math.random() * quotes.length)];
+
+    /*************************************
+     * 2. Global Variables & Local Storage *
+     *************************************/
+    let currentView = "weekly"; // "weekly" or "monthly"
+    let currentHabitForIcon = null;  // used for editing icon
+    let currentHabitToDelete = null; // used for delete confirmation
+    let draggedCard = null;  // declared once
+
+    /* 
+      habitData structure:
+      {
+        "Reading": { 
+           dates: { "YYYY-MM-DD": true, ... },
+           icon: "https://example.com/icon.png"  // or an emoji (e.g., "😀")
+        },
+        ...
+      }
+    */
+    let habitData = JSON.parse(localStorage.getItem("habitTrackerData")) || {};
+    let habitOrder = JSON.parse(localStorage.getItem("habitTrackerOrder")) || [];
+
+    // Only add default habits if no data exists.
+    if (localStorage.getItem("habitTrackerData") === null) {
+      const defaultHabits = ["Reading", "Workout", "Meditation"];
+      defaultHabits.forEach(habit => {
+        habitData[habit] = { dates: {}, icon: "" };
+        habitOrder.push(habit);
+      });
+      saveData();
+    }
+
+    // Upgrade older data: Ensure each habit has a "dates" property.
+    habitOrder.forEach(habit => {
+      if (!habitData[habit] || typeof habitData[habit].dates !== "object") {
+        habitData[habit] = { dates: {}, icon: "" };
+      }
+    });
+
+    function saveData() {
+      localStorage.setItem("habitTrackerData", JSON.stringify(habitData));
+      localStorage.setItem("habitTrackerOrder", JSON.stringify(habitOrder));
+    }
+
+    /*************************************
+     * 3. Date Helpers                   *
+     *************************************/
+    function getDateRange() {
+      const dates = [];
+      const today = new Date();
+      if (currentView === "weekly") {
+        const dayOfWeek = today.getDay();
+        const sunday = new Date(today);
+        sunday.setDate(today.getDate() - dayOfWeek);
+        for (let i = 0; i < 7; i++) {
+          const date = new Date(sunday);
+          date.setDate(sunday.getDate() + i);
+          dates.push(date);
+        }
+      } else if (currentView === "monthly") {
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        for (let d = firstDay.getDate(); d <= lastDay.getDate(); d++) {
+          dates.push(new Date(year, month, d));
+        }
+      }
+      return dates;
+    }
+
+    function formatDate(date) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, "0");
+      const dd = String(date.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function formatDateDisplay(date) {
+      if (currentView === "monthly") {
+        return date.getDate();
+      } else {
+        const options = { weekday: 'short', month: 'short', day: 'numeric' };
+        return date.toLocaleDateString(undefined, options);
+      }
+    }
+
+    /*************************************
+     * 4. Render Habit Cards              *
+     *************************************/
+    function renderCards() {
+      const container = document.getElementById("cardsContainer");
+      container.innerHTML = "";
+      const dates = getDateRange();
+
+      habitOrder.forEach(habit => {
+        if (!habitData[habit] || typeof habitData[habit].dates !== "object") {
+          habitData[habit] = { dates: {}, icon: "" };
+        }
+        
+        const card = document.createElement("div");
+        card.className = "habit-card";
+        card.setAttribute("draggable", "true");
+        card.addEventListener("dragstart", dragStart);
+        card.addEventListener("dragover", dragOver);
+        card.addEventListener("drop", dragDrop);
+        card.addEventListener("dragend", dragEnd);
+
+        const header = document.createElement("div");
+        header.className = "habit-header";
+
+        const leftHeader = document.createElement("div");
+        leftHeader.className = "habit-header-left";
+
+        const iconDiv = document.createElement("div");
+        iconDiv.className = "habit-icon";
+        iconDiv.onclick = function() {
+          editIconForHabit(habit);
+        };
+        if (habitData[habit].icon && (habitData[habit].icon.startsWith("http") || habitData[habit].icon.startsWith("data:"))) {
+          const img = document.createElement("img");
+          img.src = habitData[habit].icon;
+          img.alt = habit;
+          iconDiv.appendChild(img);
+        } else if (habitData[habit].icon) {
+          const span = document.createElement("span");
+          span.textContent = habitData[habit].icon;
+          iconDiv.appendChild(span);
+        } else {
+          const span = document.createElement("span");
+          span.textContent = habit.charAt(0).toUpperCase();
+          iconDiv.appendChild(span);
+        }
+        leftHeader.appendChild(iconDiv);
+
+        const title = document.createElement("div");
+        title.className = "habit-title";
+        title.textContent = habit;
+        leftHeader.appendChild(title);
+
+        header.appendChild(leftHeader);
+
+        const deleteIcon = document.createElement("div");
+        deleteIcon.className = "habit-delete";
+        deleteIcon.title = "Delete Habit";
+        deleteIcon.textContent = "✖";
+        deleteIcon.onclick = function() {
+          showConfirmModal(habit);
+        };
+        header.appendChild(deleteIcon);
+
+        card.appendChild(header);
+
+        const dateBlocks = document.createElement("div");
+        dateBlocks.className = "date-blocks";
+        dates.forEach(date => {
+          const block = document.createElement("div");
+          block.className = "date-block";
+          block.textContent = formatDateDisplay(date);
+          const dateStr = formatDate(date);
+          if (habitData[habit].dates[dateStr]) { 
+            block.classList.add("done"); 
+          }
+          block.addEventListener("click", function() {
+            habitData[habit].dates[dateStr] = !habitData[habit].dates[dateStr];
+            saveData();
+            renderCards();
+            renderGraph();
+          });
+          dateBlocks.appendChild(block);
+        });
+        card.appendChild(dateBlocks);
+        container.appendChild(card);
+      });
+      renderGraph();
+    }
+
+    /*************************************
+     * 5. Graph Rendering                 *
+     *************************************/
+    function renderGraph() {
+      const canvas = document.getElementById("graphCanvas");
+      const ctx = canvas.getContext("2d");
+      const containerWidth = document.querySelector(".container").clientWidth;
+      canvas.width = containerWidth - 40;
+      canvas.height = 150;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const dates = getDateRange();
+      const pointCount = dates.length;
+      const maxPossible = habitOrder.length;
+      const dataPoints = dates.map(date => {
+        const dateStr = formatDate(date);
+        let count = 0;
+        habitOrder.forEach(habit => {
+          if (habitData[habit].dates[dateStr]) count++;
+        });
+        return count;
+      });
+
+      const margin = 40;
+      const graphWidth = canvas.width - 2 * margin;
+      const graphHeight = canvas.height - 2 * margin;
+      const pointSpacing = pointCount > 1 ? graphWidth / (pointCount - 1) : graphWidth;
+
+      ctx.strokeStyle = "#444";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= maxPossible; i++) {
+        const y = margin + graphHeight - (i / maxPossible) * graphHeight;
+        ctx.beginPath();
+        ctx.moveTo(margin, y);
+        ctx.lineTo(margin + graphWidth, y);
+        ctx.stroke();
+      }
+
+      ctx.beginPath();
+      ctx.strokeStyle = "#00c6ff";
+      ctx.lineWidth = 3;
+      dataPoints.forEach((value, i) => {
+        const x = margin + i * pointSpacing;
+        const y = margin + graphHeight - (value / maxPossible) * graphHeight;
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      ctx.stroke();
+
+      ctx.fillStyle = "#0072ff";
+      dataPoints.forEach((value, i) => {
+        const x = margin + i * pointSpacing;
+        const y = margin + graphHeight - (value / maxPossible) * graphHeight;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, 2 * Math.PI);
+        ctx.fill();
+      });
+
+      ctx.fillStyle = "#ccc";
+      ctx.font = "12px Arial";
+      ctx.textAlign = "center";
+      if (currentView === "monthly") {
+        dates.forEach((date, i) => {
+          const x = margin + i * pointSpacing;
+          const label = date.getDate();
+          ctx.fillText(label, x, canvas.height - 10);
+        });
+        const monthName = dates[0].toLocaleDateString(undefined, { month: 'short' });
+        ctx.fillText(monthName, margin + graphWidth, canvas.height - 25);
+      } else {
+        dates.forEach((date, i) => {
+          const x = margin + i * pointSpacing;
+          const label = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          ctx.fillText(label, x, canvas.height - 10);
+        });
+      }
+
+      ctx.fillStyle = "#ccc";
+      ctx.textAlign = "right";
+      for (let i = 0; i <= maxPossible; i++) {
+        const y = margin + graphHeight - (i / maxPossible) * graphHeight;
+        ctx.fillText(i, margin - 5, y + 4);
+      }
+    }
+
+    /*************************************
+     * 6. Drag & Drop Reordering          *
+     *************************************/
+    function dragStart(e) {
+      draggedCard = this;
+      this.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    }
+    function dragOver(e) {
+      e.preventDefault();
+      this.classList.add("drag-over");
+      return false;
+    }
+    function dragDrop(e) {
+      e.stopPropagation();
+      if (draggedCard !== this) {
+        const cards = Array.from(document.querySelectorAll(".habit-card"));
+        const fromIndex = cards.indexOf(draggedCard);
+        const toIndex = cards.indexOf(this);
+        if (fromIndex >= 0 && toIndex >= 0) {
+          habitOrder.splice(toIndex, 0, habitOrder.splice(fromIndex, 1)[0]);
+          saveData();
+          renderCards();
+        }
+      }
+      return false;
+    }
+    function dragEnd() {
+      this.classList.remove("dragging");
+      document.querySelectorAll(".habit-card").forEach(card => card.classList.remove("drag-over"));
+    }
+
+    /*************************************
+     * 7. Habit Management               *
+     *************************************/
+    function addHabit() {
+      const input = document.getElementById("newHabitInput");
+      const habitName = input.value.trim();
+      if (habitName && !habitData[habitName]) {
+        habitData[habitName] = { dates: {}, icon: "" };
+        habitOrder.push(habitName);
+        input.value = "";
+        saveData();
+        renderCards();
+      } else if (habitData[habitName]) {
+        alert("Habit already exists!");
+      }
+    }
+    function deleteHabit(habit) {
+      delete habitData[habit];
+      habitOrder = habitOrder.filter(h => h !== habit);
+      saveData();
+      renderCards();
+    }
+    function editIconForHabit(habit) {
+      currentHabitForIcon = habit;
+      const currentIcon = habitData[habit].icon || "";
+      if (currentIcon && (currentIcon.startsWith("http") || currentIcon.startsWith("data:"))) {
+        setActiveModalTab("upload");
+        const modalLink = document.getElementById("modalLinkInput");
+        if (modalLink) modalLink.value = currentIcon;
+        const modalEmoji = document.getElementById("modalEmojiInput");
+        if (modalEmoji) modalEmoji.value = "";
+      } else if (currentIcon) {
+        setActiveModalTab("emoji");
+        const modalEmoji = document.getElementById("modalEmojiInput");
+        if (modalEmoji) modalEmoji.value = currentIcon;
+        const modalLink = document.getElementById("modalLinkInput");
+        if (modalLink) modalLink.value = "";
+      } else {
+        setActiveModalTab("emoji");
+        const modalEmoji = document.getElementById("modalEmojiInput");
+        if (modalEmoji) modalEmoji.value = "";
+        const modalLink = document.getElementById("modalLinkInput");
+        if (modalLink) modalLink.value = "";
+      }
+      const modalFile = document.getElementById("modalFileInput");
+      if (modalFile) modalFile.value = "";
+      const modalHeader = document.getElementById("modalHeader");
+      if (modalHeader) modalHeader.textContent = "Set Icon for " + habit;
+      document.getElementById("iconModal").style.display = "flex";
+      // Initialize emoji-picker event listener
+      const emojiPicker = document.getElementById("emojiPicker");
+      if (emojiPicker) {
+        emojiPicker.addEventListener("emoji-click", event => {
+          // Use event.detail.unicode for the selected emoji.
+          const selectedEmoji = event.detail.unicode || event.detail.emoji;
+          const modalEmoji = document.getElementById("modalEmojiInput");
+          if (modalEmoji) {
+            modalEmoji.value = selectedEmoji;
+          }
+        });
+      }
+    }
+
+    /*************************************
+     * 8. Modal Functionality (Icon)      *
+     *************************************/
+    document.getElementById("emojiTab").addEventListener("click", function() {
+      setActiveModalTab("emoji");
+    });
+    document.getElementById("uploadTab").addEventListener("click", function() {
+      setActiveModalTab("upload");
+    });
+    function setActiveModalTab(tab) {
+      if (tab === "emoji") {
+        document.getElementById("emojiTab").classList.add("active");
+        document.getElementById("uploadTab").classList.remove("active");
+        document.getElementById("emojiBody").classList.add("active");
+        document.getElementById("uploadBody").classList.remove("active");
+      } else {
+        document.getElementById("uploadTab").classList.add("active");
+        document.getElementById("emojiTab").classList.remove("active");
+        document.getElementById("uploadBody").classList.add("active");
+        document.getElementById("emojiBody").classList.remove("active");
+      }
+    }
+    document.getElementById("modalCancelBtn").addEventListener("click", function() {
+      document.getElementById("iconModal").style.display = "none";
+    });
+    document.getElementById("modalSaveBtn").addEventListener("click", function() {
+      const activeTab = document.querySelector(".modal-tabs button.active").id;
+      if (activeTab === "emojiTab") {
+        const modalEmoji = document.getElementById("modalEmojiInput");
+        const emoji = modalEmoji ? modalEmoji.value.trim() : "";
+        habitData[currentHabitForIcon].icon = emoji;
+        saveData();
+        renderCards();
+        document.getElementById("iconModal").style.display = "none";
+      } else {
+        const fileInput = document.getElementById("modalFileInput");
+        if (fileInput.files && fileInput.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            habitData[currentHabitForIcon].icon = e.target.result;
+            saveData();
+            renderCards();
+            document.getElementById("iconModal").style.display = "none";
+          };
+          reader.readAsDataURL(fileInput.files[0]);
+        } else {
+          const modalLink = document.getElementById("modalLinkInput");
+          const link = modalLink ? modalLink.value.trim() : "";
+          habitData[currentHabitForIcon].icon = link;
+          saveData();
+          renderCards();
+          document.getElementById("iconModal").style.display = "none";
+        }
+      }
+    });
+
+    /*************************************
+     * 9. Custom Delete Confirmation Modal *
+     *************************************/
+    function showConfirmModal(habit) {
+      currentHabitToDelete = habit;
+      document.getElementById("confirmModalBody").textContent = "Delete habit '" + habit + "'?";
+      document.getElementById("confirmModal").style.display = "flex";
+    }
+    document.getElementById("confirmCancelBtn").addEventListener("click", function() {
+      document.getElementById("confirmModal").style.display = "none";
+      currentHabitToDelete = null;
+    });
+    document.getElementById("confirmDeleteBtn").addEventListener("click", function() {
+      if (currentHabitToDelete) {
+        deleteHabit(currentHabitToDelete);
+      }
+      document.getElementById("confirmModal").style.display = "none";
+      currentHabitToDelete = null;
+    });
+
+    /*************************************
+     * 10. Event Listeners for View Toggle *
+     *************************************/
+    document.getElementById("weeklyViewBtn").addEventListener("click", function() {
+      currentView = "weekly";
+      renderCards();
+    });
+    document.getElementById("monthlyViewBtn").addEventListener("click", function() {
+      currentView = "monthly";
+      renderCards();
+    });
+
+    /*************************************
+     * 11. Drag & Drop Reordering         *
+     *************************************/
+    function dragStart(e) {
+      draggedCard = this;
+      this.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+    }
+    function dragOver(e) {
+      e.preventDefault();
+      this.classList.add("drag-over");
+      return false;
+    }
+    function dragDrop(e) {
+      e.stopPropagation();
+      if (draggedCard !== this) {
+        const cards = Array.from(document.querySelectorAll(".habit-card"));
+        const fromIndex = cards.indexOf(draggedCard);
+        const toIndex = cards.indexOf(this);
+        if (fromIndex >= 0 && toIndex >= 0) {
+          habitOrder.splice(toIndex, 0, habitOrder.splice(fromIndex, 1)[0]);
+          saveData();
+          renderCards();
+        }
+      }
+      return false;
+    }
+    function dragEnd() {
+      this.classList.remove("dragging");
+      document.querySelectorAll(".habit-card").forEach(card => card.classList.remove("drag-over"));
+    }
+
+    /*************************************
+     * 12. Initial Render                *
+     *************************************/
+    renderCards();
+  </script>
+</body>
+</html>
